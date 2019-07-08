@@ -7,6 +7,15 @@ func (c *Cache) Set(key string, value interface{}) {
 	c.data[key] = newCacheDatum(key, value)
 }
 
+func (c *Cache) SetIfHasNot(key string, value interface{}) {
+	defer c.mutex.Unlock()
+	c.mutex.Lock()
+
+	if _, exists := c.data[key]; !exists {
+		c.data[key] = newCacheDatum(key, value)
+	}
+}
+
 func (c *Cache) Unset(key string) {
 	defer c.mutex.Unlock()
 	c.mutex.Lock()
