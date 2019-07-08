@@ -5,6 +5,7 @@ func (c *Cache) Set(key string, value interface{}) {
 	c.mutex.Lock()
 
 	c.data[key] = newCacheDatum(key, value)
+	c.mutated = true
 }
 
 func (c *Cache) SetIfHasNot(key string, value interface{}) {
@@ -13,6 +14,7 @@ func (c *Cache) SetIfHasNot(key string, value interface{}) {
 
 	if _, exists := c.data[key]; !exists {
 		c.data[key] = newCacheDatum(key, value)
+		c.mutated = true
 	}
 }
 
@@ -21,6 +23,7 @@ func (c *Cache) Unset(key string) {
 	c.mutex.Lock()
 
 	delete(c.data, key)
+	c.mutated = true
 }
 
 func (c *Cache) Clear() {
@@ -28,6 +31,7 @@ func (c *Cache) Clear() {
 	c.mutex.Lock()
 
 	c.data = make(cacheDataMap)
+	c.mutated = true
 }
 
 func (c *Cache) Increment(key string) {
@@ -44,6 +48,7 @@ func (c *Cache) Increment(key string) {
 	}
 
 	c.data[key] = newCacheDatum(key, count+1)
+	c.mutated = true
 }
 
 func (c *Cache) Decrement(key string) {
@@ -60,4 +65,5 @@ func (c *Cache) Decrement(key string) {
 	}
 
 	c.data[key] = newCacheDatum(key, count-1)
+	c.mutated = true
 }

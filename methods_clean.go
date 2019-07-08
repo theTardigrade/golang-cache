@@ -16,6 +16,10 @@ func (c *Cache) Clean() {
 	defer c.mutex.Unlock()
 	c.mutex.Lock()
 
+	if !c.mutated {
+		return
+	}
+
 	beyondMaxCount := len(c.data) - c.maxValues
 
 	if c.expiryDuration >= 0 {
@@ -61,6 +65,8 @@ func (c *Cache) Clean() {
 			}
 		}
 	}
+
+	c.mutated = false
 }
 
 const (

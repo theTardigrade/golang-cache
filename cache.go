@@ -16,6 +16,7 @@ type cacheDataMap map[string]*cacheDatum
 type Cache struct {
 	data           cacheDataMap
 	mutex          sync.RWMutex
+	mutated        bool
 	expiryDuration time.Duration
 	maxValues      int
 }
