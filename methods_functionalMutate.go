@@ -26,3 +26,16 @@ func (c *Cache) Filter(callback func(string, interface{}, time.Time) bool) {
 
 	c.mutated = true
 }
+
+func (c *Cache) Map(callback func(string, interface{}, time.Time) interface{}) {
+	defer c.mutex.Unlock()
+	c.mutex.Lock()
+
+	for key, datum := range c.data {
+		if value := callback(key, datum.value, datum.setTime); value != datum.value {
+			c.data[key] = newCacheDatum(key, value)
+		}
+	}
+
+	c.mutated = true
+}
