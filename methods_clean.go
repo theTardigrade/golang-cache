@@ -64,17 +64,17 @@ func (c *Cache) Clean() {
 }
 
 const (
-	minSleepDuration = time.Minute
-	maxSleepDuration = time.Hour
+	watchSleepDurationMin = time.Minute
+	watchSleepDurationMax = time.Hour
 )
 
 // runs in own goroutine
 func (cache *Cache) watch() {
 	sleepDuration := cache.expiryDuration / 6
-	if sleepDuration < minSleepDuration {
-		sleepDuration = minSleepDuration
-	} else if sleepDuration > maxSleepDuration {
-		sleepDuration = maxSleepDuration
+	if sleepDuration < watchSleepDurationMin {
+		sleepDuration = watchSleepDurationMin
+	} else if sleepDuration > watchSleepDurationMax {
+		sleepDuration = watchSleepDurationMax
 	}
 
 	initialSleepDuration := time.Duration(rand.Intn(int(sleepDuration/time.Millisecond))) * time.Millisecond
