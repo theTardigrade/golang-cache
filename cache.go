@@ -28,7 +28,9 @@ func NewCache(expiryDuration time.Duration, maxValues int) *Cache {
 		maxValues:      maxValues,      // -1 == infinite
 	}
 
-	go cache.watch()
+	if expiryDuration != -1 || maxValues != -1 {
+		go cache.watch()
+	}
 
 	return &cache
 }
