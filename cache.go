@@ -14,25 +14,37 @@ type cacheDatum struct {
 type cacheDataMap map[string]*cacheDatum
 
 type Cache struct {
-	data           cacheDataMap
-	mutex          sync.RWMutex
-	mutated        bool
-	expiryDuration time.Duration
-	maxValues      int
+	data    cacheDataMap
+	mutex   sync.RWMutex
+	mutated bool
+	options Options
+}
+
+func NewInfiniteCache() *Cache {
+	return &Cache{
+		data: make(cacheDataMap),
+	}
 }
 
 func NewCache(expiryDuration time.Duration, maxValues int) *Cache {
-	cache := Cache{
-		data:           make(cacheDataMap),
-		expiryDuration: expiryDuration, // -1 == infinite
-		maxValues:      maxValues,      // -1 == infinite
+	options := Options{
+		ExpiryDuration: expiryDuration,
+		MaxValues:      maxValues,
 	}
 
-	if expiryDuration >= 0 || maxValues >= 0 {
+	return NewCacheWithOptions(options)
+}
+
+func NewCacheWithOptions(options Options) *Cache {
+	cache := NewInfiniteCache()
+
+	cache.options = options
+
+	if options.ExpiryDuration > 0 || options.MaxValues > 0 {
 		go cache.watch()
 	}
 
-	return &cache
+	return cache
 }
 
 func newCacheDatum(key string, value interface{}) *cacheDatum {

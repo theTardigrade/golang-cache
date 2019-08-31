@@ -15,11 +15,14 @@ func (c *Cache) Clean() {
 	defer c.mutex.Unlock()
 	c.mutex.Lock()
 
-	beyondMaxCount := len(c.data) - c.maxValues
+	expiryDuration := c.options.ExpiryDuration
+	maxValues := c.options.MaxValues
 
-	if c.expiryDuration >= 0 {
+	beyondMaxCount := len(c.data) - maxValues
+
+	if expiryDuration > 0 {
 		for key, datum := range c.data {
-			if time.Since(datum.setTime) >= c.expiryDuration {
+			if time.Since(datum.setTime) >= expiryDuration {
 				delete(c.data, key)
 				beyondMaxCount--
 			}
@@ -30,7 +33,7 @@ func (c *Cache) Clean() {
 		return
 	}
 
-	if beyondMaxCount > 0 && c.maxValues >= 0 {
+	if beyondMaxCount > 0 && maxValues > 0 {
 		if beyondMaxCount == 1 {
 			var earliestDatum *cacheDatum
 
@@ -81,16 +84,26 @@ const (
 
 // runs in own goroutine
 func (cache *Cache) watch() {
-	sleepDuration := cache.expiryDuration / 10
-
-	if sleepDuration < watchSleepDurationMin {
-		sleepDuration = watchSleepDurationMin
-	} else if sleepDuration > watchSleepDurationMax {
-		sleepDuration = watchSleepDurationMax
-	}
-
 	for {
-		time.Sleep(sleepDuration)
-		cache.Clean()
+		sleepDuration := cache.options.ExpiryDuration / 10
+
+		if sleepDuration < watchSleepDurationMin {
+			sleepDuration = watchSleepDurationMin
+		} else if sleepDuration > watchSleepDurationMax {
+			sleepDuration = watchSleepDurationMax
+		}
+
+		for {
+			time.Sleep(sleepDuration)
+			cache.Clean()
+
+			cache.mutex.RLock()
+			m := cache.mutated
+			cache.mutex.RUnlock()
+
+			if m {
+				break
+			}
+		}
 	}
 }
