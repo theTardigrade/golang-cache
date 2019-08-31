@@ -30,7 +30,7 @@ func (c *Cache) Clean() {
 		return
 	}
 
-	if c.maxValues >= 0 && beyondMaxCount > 0 {
+	if beyondMaxCount > 0 && c.maxValues >= 0 {
 		if beyondMaxCount == 1 {
 			var earliestDatum *cacheDatum
 
@@ -53,19 +53,20 @@ func (c *Cache) Clean() {
 			delete(c.data, earliestDatum.key)
 		} else {
 			dataLen := len(c.data)
-			sortedData := make(cacheDataSlice, 0, dataLen)
+			dataMaxIndex := dataLen - 1
+			sortedData := make(cacheDataSlice, dataLen)
 
+			i := dataMaxIndex
 			for _, datum := range c.data {
-				sortedData = append(sortedData, datum)
+				sortedData[i] = datum
+				i--
 			}
 
 			sort.Sort(sortedData)
 
-			i := dataLen - 1
-			l := i - beyondMaxCount
-			for i > l {
+			i = dataMaxIndex
+			for l := i - beyondMaxCount; i > l; i-- {
 				delete(c.data, sortedData[i].key)
-				i--
 			}
 		}
 	}
