@@ -39,6 +39,6 @@ func newCacheDatum(key string, value interface{}) *cacheDatum {
 	return &cacheDatum{
 		key:     key,
 		value:   value,
-		setTime: time.Now().UTC(),
+		setTime: time.Now(),
 	}
 }

@@ -1,7 +1,6 @@
 package cache
 
 import (
-	"math/rand"
 	"sort"
 	"time"
 )
@@ -16,10 +15,6 @@ func (c *Cache) Clean() {
 	defer c.mutex.Unlock()
 	c.mutex.Lock()
 
-	if !c.mutated {
-		return
-	}
-
 	beyondMaxCount := len(c.data) - c.maxValues
 
 	if c.expiryDuration >= 0 {
@@ -31,17 +26,26 @@ func (c *Cache) Clean() {
 		}
 	}
 
+	if !c.mutated {
+		return
+	}
+
 	if c.maxValues >= 0 && beyondMaxCount > 0 {
 		if beyondMaxCount == 1 {
 			var earliestDatum *cacheDatum
 
 			for _, datum := range c.data {
-				earliestSetTime := earliestDatum.setTime
-				if isZero := earliestSetTime.IsZero(); isZero || datum.setTime.Sub(earliestSetTime) > 0 {
+				if earliestDatum == nil {
 					earliestDatum = datum
+				} else {
+					earliestSetTime := earliestDatum.setTime
 
-					if isZero {
-						break
+					if isZero := earliestSetTime.IsZero(); isZero || datum.setTime.Sub(earliestSetTime) > 0 {
+						earliestDatum = datum
+
+						if isZero {
+							break
+						}
 					}
 				}
 			}
@@ -70,22 +74,22 @@ func (c *Cache) Clean() {
 }
 
 const (
-	watchSleepDurationMin = time.Minute
-	watchSleepDurationMax = time.Hour
+	watchSleepDurationMin = time.Millisecond
+	watchSleepDurationMax = time.Minute
 )
 
 // runs in own goroutine
 func (cache *Cache) watch() {
-	sleepDuration := cache.expiryDuration / 6
+	sleepDuration := cache.expiryDuration / 10
+
 	if sleepDuration < watchSleepDurationMin {
 		sleepDuration = watchSleepDurationMin
 	} else if sleepDuration > watchSleepDurationMax {
 		sleepDuration = watchSleepDurationMax
 	}
 
-	initialSleepDuration := time.Duration(rand.Intn(int(sleepDuration/time.Millisecond))) * time.Millisecond
-
-	for time.Sleep(initialSleepDuration); ; time.Sleep(sleepDuration) {
+	for {
+		time.Sleep(sleepDuration)
 		cache.Clean()
 	}
 }
