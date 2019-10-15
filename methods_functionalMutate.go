@@ -1,8 +1,6 @@
 package cache
 
-import "time"
-
-func (c *Cache) IterateClear(callback func(string, interface{}, time.Time)) {
+func (c *Cache) IterateClear(callback CallbackFunc) {
 	defer c.mutex.Unlock()
 	c.mutex.Lock()
 
@@ -14,7 +12,7 @@ func (c *Cache) IterateClear(callback func(string, interface{}, time.Time)) {
 	}
 }
 
-func (c *Cache) Filter(callback func(string, interface{}, time.Time) bool) {
+func (c *Cache) Filter(callback CallbackFilterFunc) {
 	defer c.mutex.Unlock()
 	c.mutex.Lock()
 
@@ -27,7 +25,7 @@ func (c *Cache) Filter(callback func(string, interface{}, time.Time) bool) {
 	}
 }
 
-func (c *Cache) Map(callback func(string, interface{}, time.Time) interface{}) {
+func (c *Cache) Map(callback CallbackMapFunc) {
 	defer c.mutex.Unlock()
 	c.mutex.Lock()
 

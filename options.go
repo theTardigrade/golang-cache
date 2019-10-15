@@ -6,5 +6,5 @@ type Options struct {
 	ExpiryDuration  time.Duration
 	MaxValues       int
 	CleanDuration   time.Duration
-	PreDeletionFunc func(string, interface{}, time.Time)
+	PreDeletionFunc CallbackFunc
 }

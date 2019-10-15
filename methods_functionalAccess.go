@@ -1,8 +1,6 @@
 package cache
 
-import "time"
-
-func (c *Cache) Iterate(callback func(string, interface{}, time.Time)) {
+func (c *Cache) Iterate(callback CallbackFunc) {
 	defer c.mutex.RUnlock()
 	c.mutex.RLock()
 

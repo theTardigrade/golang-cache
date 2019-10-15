@@ -26,7 +26,7 @@ func (c *Cache) SetCleanDuration(d time.Duration) {
 	c.options.CleanDuration = d
 }
 
-func (c *Cache) SetPreDeletionFunc(p func(string, interface{}, time.Time)) {
+func (c *Cache) SetPreDeletionFunc(p CallbackFunc) {
 	defer c.mutex.Unlock()
 	c.mutex.Lock()
 

@@ -20,6 +20,10 @@ type Cache struct {
 	options Options
 }
 
+type CallbackFunc func(string, interface{}, time.Time)
+type CallbackFilterFunc func(string, interface{}, time.Time) bool
+type CallbackMapFunc func(string, interface{}, time.Time) interface{}
+
 func NewInfiniteCache() *Cache {
 	return &Cache{
 		data: make(cacheDataMap),
