@@ -23,6 +23,10 @@ func (c *Cache) Clean() {
 	if expiryDuration > 0 {
 		for key, datum := range c.data {
 			if time.Since(datum.setTime) >= expiryDuration {
+				if c.options.PreDeletionFunc != nil {
+					c.options.PreDeletionFunc(key, datum.value, datum.setTime)
+				}
+
 				delete(c.data, key)
 				beyondMaxCount--
 			}
@@ -53,6 +57,10 @@ func (c *Cache) Clean() {
 				}
 			}
 
+			if c.options.PreDeletionFunc != nil {
+				c.options.PreDeletionFunc(earliestDatum.key, earliestDatum.value, earliestDatum.setTime)
+			}
+
 			delete(c.data, earliestDatum.key)
 		} else {
 			dataLen := len(c.data)
@@ -69,7 +77,13 @@ func (c *Cache) Clean() {
 
 			i = dataMaxIndex
 			for l := i - beyondMaxCount; i > l; i-- {
-				delete(c.data, sortedData[i].key)
+				datum := sortedData[i]
+
+				if c.options.PreDeletionFunc != nil {
+					c.options.PreDeletionFunc(datum.key, datum.value, datum.setTime)
+				}
+
+				delete(c.data, datum.key)
 			}
 		}
 	}
@@ -78,30 +92,53 @@ func (c *Cache) Clean() {
 }
 
 const (
-	watchSleepDurationMin = time.Millisecond
-	watchSleepDurationMax = time.Minute
+	cleanDurationGeneratedMin = time.Millisecond
+	cleanDurationGeneratedMax = time.Minute
 )
 
 // runs in own goroutine
-func (cache *Cache) watch() {
-	for {
-		sleepDuration := cache.options.ExpiryDuration / 10
+func (c *Cache) watch() {
+	var prevExecutionDuration time.Duration
+	startTime := time.Now()
 
-		if sleepDuration < watchSleepDurationMin {
-			sleepDuration = watchSleepDurationMin
-		} else if sleepDuration > watchSleepDurationMax {
-			sleepDuration = watchSleepDurationMax
-		}
+	for {
+		var cleanDuration time.Duration
+
+		func() {
+			defer c.mutex.RUnlock()
+			c.mutex.RLock()
+
+			cleanDuration = c.options.CleanDuration
+
+			if cleanDuration <= 0 {
+				cleanDuration = c.options.ExpiryDuration / 10
+
+				if cleanDuration < cleanDurationGeneratedMin {
+					cleanDuration = cleanDurationGeneratedMin
+				} else if cleanDuration > cleanDurationGeneratedMax {
+					cleanDuration = cleanDurationGeneratedMax
+				}
+			}
+		}()
 
 		for {
-			time.Sleep(sleepDuration)
-			cache.Clean()
+			sleepDuration := cleanDuration - prevExecutionDuration
+			prevExecutionDuration = time.Since(startTime)
 
-			cache.mutex.RLock()
-			m := cache.mutated
-			cache.mutex.RUnlock()
+			if sleepDuration > 0 {
+				time.Sleep(sleepDuration)
+			}
 
-			if m {
+			startTime = time.Now()
+
+			c.Clean()
+
+			if func() bool {
+				defer c.mutex.RUnlock()
+				c.mutex.RLock()
+
+				return c.mutated
+			}() {
 				break
 			}
 		}
