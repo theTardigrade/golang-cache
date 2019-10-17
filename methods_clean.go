@@ -11,88 +11,133 @@ func (s cacheDataSlice) Len() int           { return len(s) }
 func (s cacheDataSlice) Less(i, j int) bool { return s[i].setTime.Sub(s[j].setTime) > 0 }
 func (s cacheDataSlice) Swap(i, j int)      { s[i], s[j] = s[j], s[i] }
 
+const (
+	cleanDefaultMaxItemsPerSweep = 1 << 16
+)
+
 func (c *Cache) Clean() {
-	defer c.mutex.Unlock()
-	c.mutex.Lock()
+	var doAnotherSweep bool
 
-	expiryDuration := c.options.ExpiryDuration
-	maxValues := c.options.MaxValues
+	func() {
+		var maxValuesPerSweep int
 
-	beyondMaxCount := len(c.data) - maxValues
+		defer c.mutex.Unlock()
+		c.mutex.Lock()
 
-	if expiryDuration > 0 {
-		for key, datum := range c.data {
-			if time.Since(datum.setTime) >= expiryDuration {
-				if c.options.PreDeletionFunc != nil {
-					c.options.PreDeletionFunc(key, datum.value, datum.setTime)
+		preDeletionFuncExists := (c.options.PreDeletionFunc != nil)
+		postDeletionFuncExists := (c.options.PostDeletionFunc != nil)
+
+		if c.options.CleanMaxValuesPerSweep != 0 {
+			maxValuesPerSweep = c.options.CleanMaxValuesPerSweep
+		} else {
+			maxValuesPerSweep = cleanDefaultMaxItemsPerSweep
+		}
+
+		expiryDuration := c.options.ExpiryDuration
+		maxValues := c.options.MaxValues
+
+		beyondMaxCount := len(c.data) - maxValues
+
+		if beyondMaxCount > maxValuesPerSweep {
+			beyondMaxCount = maxValuesPerSweep
+			doAnotherSweep = true
+		}
+
+		if expiryDuration > 0 {
+			for key, datum := range c.data {
+				if beyondMaxCount == 0 {
+					return
 				}
 
-				delete(c.data, key)
-				beyondMaxCount--
-			}
-		}
-	}
+				if time.Since(datum.setTime) >= expiryDuration {
+					if preDeletionFuncExists {
+						c.options.PreDeletionFunc(key, datum.value, datum.setTime)
+					}
 
-	if !c.mutated {
-		return
-	}
+					delete(c.data, key)
+					beyondMaxCount--
 
-	if beyondMaxCount > 0 && maxValues > 0 {
-		if beyondMaxCount == 1 {
-			var earliestDatum *cacheDatum
-
-			for _, datum := range c.data {
-				if earliestDatum == nil {
-					earliestDatum = datum
-				} else {
-					earliestSetTime := earliestDatum.setTime
-
-					if isZero := earliestSetTime.IsZero(); isZero || datum.setTime.Sub(earliestSetTime) > 0 {
-						earliestDatum = datum
-
-						if isZero {
-							break
-						}
+					if postDeletionFuncExists {
+						c.options.PostDeletionFunc(key, datum.value, datum.setTime)
 					}
 				}
 			}
+		}
 
-			if c.options.PreDeletionFunc != nil {
-				c.options.PreDeletionFunc(earliestDatum.key, earliestDatum.value, earliestDatum.setTime)
-			}
+		if !c.mutated {
+			return
+		}
 
-			delete(c.data, earliestDatum.key)
-		} else {
-			dataLen := len(c.data)
-			dataMaxIndex := dataLen - 1
-			sortedData := make(cacheDataSlice, dataLen)
+		if beyondMaxCount > 0 && maxValues > 0 {
+			if beyondMaxCount == 1 {
+				var earliestDatum *cacheDatum
 
-			i := dataMaxIndex
-			for _, datum := range c.data {
-				sortedData[i] = datum
-				i--
-			}
+				for _, datum := range c.data {
+					if earliestDatum == nil {
+						earliestDatum = datum
+					} else {
+						earliestSetTime := earliestDatum.setTime
 
-			sort.Sort(sortedData)
+						if isZero := earliestSetTime.IsZero(); isZero || datum.setTime.Sub(earliestSetTime) > 0 {
+							earliestDatum = datum
 
-			i = dataMaxIndex
-			for l := i - beyondMaxCount; i > l; i-- {
-				datum := sortedData[i]
-
-				if c.options.PreDeletionFunc != nil {
-					c.options.PreDeletionFunc(datum.key, datum.value, datum.setTime)
+							if isZero {
+								break
+							}
+						}
+					}
 				}
 
-				delete(c.data, datum.key)
+				if preDeletionFuncExists {
+					c.options.PreDeletionFunc(earliestDatum.key, earliestDatum.value, earliestDatum.setTime)
+				}
+
+				delete(c.data, earliestDatum.key)
+
+				if postDeletionFuncExists {
+					c.options.PostDeletionFunc(earliestDatum.key, earliestDatum.value, earliestDatum.setTime)
+				}
+			} else {
+				dataLen := len(c.data)
+				dataMaxIndex := dataLen - 1
+				sortedData := make(cacheDataSlice, dataLen)
+
+				i := dataMaxIndex
+				for _, datum := range c.data {
+					sortedData[i] = datum
+					i--
+				}
+
+				sort.Sort(sortedData)
+
+				i = dataMaxIndex
+				for l := i - beyondMaxCount; i > l; i-- {
+					datum := sortedData[i]
+
+					if preDeletionFuncExists {
+						c.options.PreDeletionFunc(datum.key, datum.value, datum.setTime)
+					}
+
+					delete(c.data, datum.key)
+
+					if postDeletionFuncExists {
+						c.options.PostDeletionFunc(datum.key, datum.value, datum.setTime)
+					}
+				}
 			}
 		}
-	}
 
-	c.mutated = false
+		c.mutated = false
+	}()
+
+	if doAnotherSweep {
+		time.Sleep(cleanDurationGeneratedMin)
+		c.Clean()
+	}
 }
 
 const (
-	cleanDurationGeneratedMin = time.Millisecond
+	cleanDurationGeneratedMin = time.Microsecond
 	cleanDurationGeneratedMax = time.Minute
 )
 
