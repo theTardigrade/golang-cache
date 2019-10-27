@@ -155,7 +155,7 @@ func (c *Cache) watch() {
 
 			cleanDuration = c.options.CleanDuration
 
-			if cleanDuration < 0 {
+			if cleanDuration <= 0 {
 				cleanDuration = c.options.ExpiryDuration / 10
 
 				if cleanDuration < cleanDurationGeneratedMin {
@@ -165,10 +165,6 @@ func (c *Cache) watch() {
 				}
 			}
 		}()
-
-		if cleanDuration == 0 {
-			return
-		}
 
 		for {
 			sleepDuration := cleanDuration - prevExecutionDuration
