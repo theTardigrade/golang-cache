@@ -40,7 +40,8 @@ func (c *Cache) Increment(key string) (count int64) {
 
 	c.mutated = true
 
-	if datum, exists := c.data[key]; exists {
+	datum, datumExists := c.data[key]
+	if datumExists {
 		countInterface := datum.value
 		if countValue, ok := countInterface.(int64); ok {
 			count = countValue
@@ -48,7 +49,12 @@ func (c *Cache) Increment(key string) (count int64) {
 	}
 
 	count++
-	c.data[key] = newCacheDatum(key, count)
+
+	if datumExists {
+		datum.value = count
+	} else {
+		c.data[key] = newCacheDatum(key, count)
+	}
 
 	return
 }
@@ -59,7 +65,8 @@ func (c *Cache) Decrement(key string) (count int64) {
 
 	c.mutated = true
 
-	if datum, exists := c.data[key]; exists {
+	datum, datumExists := c.data[key]
+	if datumExists {
 		countInterface := datum.value
 		if countValue, ok := countInterface.(int64); ok {
 			count = countValue - 1
@@ -67,7 +74,12 @@ func (c *Cache) Decrement(key string) (count int64) {
 	}
 
 	count--
-	c.data[key] = newCacheDatum(key, count)
+
+	if datumExists {
+		datum.value = count
+	} else {
+		c.data[key] = newCacheDatum(key, count)
+	}
 
 	return
 }
