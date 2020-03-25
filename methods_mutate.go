@@ -34,13 +34,11 @@ func (c *Cache) Clear() {
 	c.data = make(cacheDataMap)
 }
 
-func (c *Cache) Increment(key string) {
+func (c *Cache) Increment(key string) (count int64) {
 	defer c.mutex.Unlock()
 	c.mutex.Lock()
 
 	c.mutated = true
-
-	var count int64
 
 	if datum, exists := c.data[key]; exists {
 		countInterface := datum.value
@@ -49,23 +47,27 @@ func (c *Cache) Increment(key string) {
 		}
 	}
 
-	c.data[key] = newCacheDatum(key, count+1)
+	count++
+	c.data[key] = newCacheDatum(key, count)
+
+	return
 }
 
-func (c *Cache) Decrement(key string) {
+func (c *Cache) Decrement(key string) (count int64) {
 	defer c.mutex.Unlock()
 	c.mutex.Lock()
 
 	c.mutated = true
 
-	var count int64
-
 	if datum, exists := c.data[key]; exists {
 		countInterface := datum.value
 		if countValue, ok := countInterface.(int64); ok {
-			count = countValue
+			count = countValue - 1
 		}
 	}
 
-	c.data[key] = newCacheDatum(key, count-1)
+	count--
+	c.data[key] = newCacheDatum(key, count)
+
+	return
 }
