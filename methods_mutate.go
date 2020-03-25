@@ -1,5 +1,7 @@
 package cache
 
+import "time"
+
 func (c *Cache) Set(key string, value interface{}) {
 	defer c.mutex.Unlock()
 	c.mutex.Lock()
@@ -34,7 +36,7 @@ func (c *Cache) Clear() {
 	c.data = make(cacheDataMap)
 }
 
-func (c *Cache) Increment(key string) (count int64) {
+func (c *Cache) Increment(key string, updateSetTime bool) (count int64) {
 	defer c.mutex.Unlock()
 	c.mutex.Lock()
 
@@ -52,6 +54,10 @@ func (c *Cache) Increment(key string) (count int64) {
 
 	if datumExists {
 		datum.value = count
+
+		if updateSetTime {
+			datum.setTime = time.Now()
+		}
 	} else {
 		c.data[key] = newCacheDatum(key, count)
 	}
@@ -59,7 +65,7 @@ func (c *Cache) Increment(key string) (count int64) {
 	return
 }
 
-func (c *Cache) Decrement(key string) (count int64) {
+func (c *Cache) Decrement(key string, updateSetTime bool) (count int64) {
 	defer c.mutex.Unlock()
 	c.mutex.Lock()
 
@@ -77,6 +83,10 @@ func (c *Cache) Decrement(key string) (count int64) {
 
 	if datumExists {
 		datum.value = count
+
+		if updateSetTime {
+			datum.setTime = time.Now()
+		}
 	} else {
 		c.data[key] = newCacheDatum(key, count)
 	}
