@@ -15,15 +15,14 @@ const (
 	cleanDefaultMaxItemsPerSweep = 1 << 16
 )
 
-// mutex must be locked before calling
-func (c *Cache) cleanDelete(datum *cacheDatum) {
-	if c.options.PreDeletionFunc != nil {
+func (c *Cache) cleanDelete(datum *cacheDatum, preDeletionFuncExists, postDeletionFuncExists bool) {
+	if preDeletionFuncExists {
 		c.options.PreDeletionFunc(datum.key, datum.value, datum.setTime)
 	}
 
 	delete(c.data, datum.key)
 
-	if c.options.PostDeletionFunc != nil {
+	if postDeletionFuncExists {
 		c.options.PostDeletionFunc(datum.key, datum.value, datum.setTime)
 	}
 }
@@ -36,6 +35,9 @@ func (c *Cache) Clean() {
 
 		defer c.mutex.Unlock()
 		c.mutex.Lock()
+
+		preDeletionFuncExists := (c.options.PreDeletionFunc != nil)
+		postDeletionFuncExists := (c.options.PostDeletionFunc != nil)
 
 		if c.options.CleanMaxValuesPerSweep != 0 {
 			maxValuesPerSweep = c.options.CleanMaxValuesPerSweep
@@ -60,7 +62,7 @@ func (c *Cache) Clean() {
 				}
 
 				if time.Since(datum.setTime) >= expiryDuration {
-					c.cleanDelete(datum)
+					c.cleanDelete(datum, preDeletionFuncExists, postDeletionFuncExists)
 					beyondMaxCount--
 				}
 			}
@@ -90,7 +92,7 @@ func (c *Cache) Clean() {
 					}
 				}
 
-				c.cleanDelete(earliestDatum)
+				c.cleanDelete(earliestDatum, preDeletionFuncExists, postDeletionFuncExists)
 			} else {
 				dataLen := len(c.data)
 				dataMaxIndex := dataLen - 1
@@ -107,7 +109,7 @@ func (c *Cache) Clean() {
 				i = dataMaxIndex
 				for l := i - beyondMaxCount; i > l; i-- {
 					datum := sortedData[i]
-					c.cleanDelete(datum)
+					c.cleanDelete(datum, preDeletionFuncExists, postDeletionFuncExists)
 				}
 			}
 		}
