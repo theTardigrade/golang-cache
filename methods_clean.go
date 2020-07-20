@@ -15,6 +15,19 @@ const (
 	cleanDefaultMaxItemsPerSweep = 1 << 16
 )
 
+// mutex must be locked before calling
+func (c *Cache) cleanDelete(datum *cacheDatum) {
+	if c.options.PreDeletionFunc != nil {
+		c.options.PreDeletionFunc(datum.key, datum.value, datum.setTime)
+	}
+
+	delete(c.data, datum.key)
+
+	if c.options.PostDeletionFunc != nil {
+		c.options.PostDeletionFunc(datum.key, datum.value, datum.setTime)
+	}
+}
+
 func (c *Cache) Clean() {
 	var doAnotherSweep bool
 
@@ -23,9 +36,6 @@ func (c *Cache) Clean() {
 
 		defer c.mutex.Unlock()
 		c.mutex.Lock()
-
-		preDeletionFuncExists := (c.options.PreDeletionFunc != nil)
-		postDeletionFuncExists := (c.options.PostDeletionFunc != nil)
 
 		if c.options.CleanMaxValuesPerSweep != 0 {
 			maxValuesPerSweep = c.options.CleanMaxValuesPerSweep
@@ -44,22 +54,14 @@ func (c *Cache) Clean() {
 		}
 
 		if expiryDuration > 0 {
-			for key, datum := range c.data {
+			for _, datum := range c.data {
 				if beyondMaxCount == 0 {
 					return
 				}
 
 				if time.Since(datum.setTime) >= expiryDuration {
-					if preDeletionFuncExists {
-						c.options.PreDeletionFunc(key, datum.value, datum.setTime)
-					}
-
-					delete(c.data, key)
+					c.cleanDelete(datum)
 					beyondMaxCount--
-
-					if postDeletionFuncExists {
-						c.options.PostDeletionFunc(key, datum.value, datum.setTime)
-					}
 				}
 			}
 		}
@@ -88,15 +90,7 @@ func (c *Cache) Clean() {
 					}
 				}
 
-				if preDeletionFuncExists {
-					c.options.PreDeletionFunc(earliestDatum.key, earliestDatum.value, earliestDatum.setTime)
-				}
-
-				delete(c.data, earliestDatum.key)
-
-				if postDeletionFuncExists {
-					c.options.PostDeletionFunc(earliestDatum.key, earliestDatum.value, earliestDatum.setTime)
-				}
+				c.cleanDelete(earliestDatum)
 			} else {
 				dataLen := len(c.data)
 				dataMaxIndex := dataLen - 1
@@ -113,16 +107,7 @@ func (c *Cache) Clean() {
 				i = dataMaxIndex
 				for l := i - beyondMaxCount; i > l; i-- {
 					datum := sortedData[i]
-
-					if preDeletionFuncExists {
-						c.options.PreDeletionFunc(datum.key, datum.value, datum.setTime)
-					}
-
-					delete(c.data, datum.key)
-
-					if postDeletionFuncExists {
-						c.options.PostDeletionFunc(datum.key, datum.value, datum.setTime)
-					}
+					c.cleanDelete(datum)
 				}
 			}
 		}
