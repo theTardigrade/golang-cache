@@ -75,7 +75,7 @@ func (c *Cache) Decrement(key string, updateSetTime bool) (count int64) {
 	if datumExists {
 		countInterface := datum.value
 		if countValue, ok := countInterface.(int64); ok {
-			count = countValue - 1
+			count = countValue
 		}
 	}
 
