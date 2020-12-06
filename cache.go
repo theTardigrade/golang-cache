@@ -44,9 +44,7 @@ func NewCacheWithOptions(options Options) *Cache {
 
 	cache.options = options
 
-	if options.ExpiryDuration > 0 || options.MaxValues > 0 {
-		go cache.watch()
-	}
+	go cache.watch()
 
 	return cache
 }
