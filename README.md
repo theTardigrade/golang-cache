@@ -20,15 +20,17 @@ import (
 
 var (
 	c = cache.NewCacheWithOptions(cache.Options{
-		ExpiryDuration:         time.Hour * 24 * 7,
-		CleanDuration:          time.Minute * 15,
+		ExpiryDuration:         time.Hour * 24,
+		CleanDuration:          time.Minute * 10,
 		MaxValues:              1024,
 		CleanMaxValuesPerSweep: 32,
 		UnsetPreFunc: func(key string, value interface{}, setTime time.Time) {
-			fmt.Printf("this function runs before the entry with the key \"%s\" is unset\n", key)
+			fmt.Printf("this function runs before the entry with the key \"%s\" is unset\n",
+				key)
 		},
 		UnsetPostFunc: func(key string, value interface{}, setTime time.Time) {
-			fmt.Printf("this function runs after the entry with the key \"%s\" is unset\n", key)
+			fmt.Printf("this function runs after the entry with the key \"%s\" is unset\n",
+				key)
 		},
 	})
 )
@@ -45,13 +47,15 @@ func main() {
 	fmt.Println(*p) // prints 99
 
 	c.Iterate(func(key string, value interface{}, setTime time.Time) {
-		fmt.Printf("%s --> %v (%s)\n", key, value, setTime.Format(time.RFC822))
+		fmt.Printf("%s --> %v (%s)\n",
+			key, value, setTime.Format(time.RFC822))
 	})
 
 	c.Unset(key) // runs UnsetPreFunc, unsets the entry and runs UnsetPostFunc
 
 	if found := c.Has(key); !found {
-		fmt.Printf("entry with the key \"%s\" is no longer found\n", key) // this message should print
+		fmt.Printf("entry with the key \"%s\" is no longer found\n",
+			key) // this message should print
 	}
 }
 ```
