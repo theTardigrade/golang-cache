@@ -7,6 +7,6 @@ type Options struct {
 	MaxValues              int
 	CleanDuration          time.Duration
 	CleanMaxValuesPerSweep int
-	PreDeletionFunc        CallbackFunc
-	PostDeletionFunc       CallbackFunc
+	UnsetPreFunc           CallbackFunc
+	UnsetPostFunc          CallbackFunc
 }

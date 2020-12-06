@@ -34,18 +34,18 @@ func (c *Cache) SetCleanMaxValuesPerSweep(n int) {
 	c.options.CleanMaxValuesPerSweep = n
 }
 
-func (c *Cache) SetPreDeletionFunc(p CallbackFunc) {
+func (c *Cache) SetUnsetPreFunc(p CallbackFunc) {
 	defer c.mutex.Unlock()
 	c.mutex.Lock()
 
 	c.mutated = true
-	c.options.PreDeletionFunc = p
+	c.options.UnsetPreFunc = p
 }
 
-func (c *Cache) SetPostDeletionFunc(p CallbackFunc) {
+func (c *Cache) SetUnsetPostFunc(p CallbackFunc) {
 	defer c.mutex.Unlock()
 	c.mutex.Lock()
 
 	c.mutated = true
-	c.options.PostDeletionFunc = p
+	c.options.UnsetPostFunc = p
 }
