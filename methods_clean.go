@@ -28,98 +28,101 @@ func (c *Cache) cleanDelete(datum *cacheDatum, preDeletionFuncExists, postDeleti
 }
 
 func (c *Cache) Clean() {
-	var doAnotherSweep bool
+	for {
+		var doAnotherSweep bool
 
-	func() {
-		var maxValuesPerSweep int
+		func() {
+			var maxValuesPerSweep int
 
-		defer c.mutex.Unlock()
-		c.mutex.Lock()
+			defer c.mutex.Unlock()
+			c.mutex.Lock()
 
-		preDeletionFuncExists := (c.options.PreDeletionFunc != nil)
-		postDeletionFuncExists := (c.options.PostDeletionFunc != nil)
+			preDeletionFuncExists := (c.options.PreDeletionFunc != nil)
+			postDeletionFuncExists := (c.options.PostDeletionFunc != nil)
 
-		if c.options.CleanMaxValuesPerSweep != 0 {
-			maxValuesPerSweep = c.options.CleanMaxValuesPerSweep
-		} else {
-			maxValuesPerSweep = cleanDefaultMaxItemsPerSweep
-		}
+			if c.options.CleanMaxValuesPerSweep != 0 {
+				maxValuesPerSweep = c.options.CleanMaxValuesPerSweep
+			} else {
+				maxValuesPerSweep = cleanDefaultMaxItemsPerSweep
+			}
 
-		expiryDuration := c.options.ExpiryDuration
-		maxValues := c.options.MaxValues
+			expiryDuration := c.options.ExpiryDuration
+			maxValues := c.options.MaxValues
 
-		beyondMaxCount := len(c.data) - maxValues
+			beyondMaxCount := len(c.data) - maxValues
 
-		if beyondMaxCount > maxValuesPerSweep {
-			beyondMaxCount = maxValuesPerSweep
-			doAnotherSweep = true
-		}
+			if beyondMaxCount > maxValuesPerSweep {
+				beyondMaxCount = maxValuesPerSweep
+				doAnotherSweep = true
+			}
 
-		if expiryDuration > 0 {
-			for _, datum := range c.data {
-				if beyondMaxCount == 0 {
-					return
-				}
+			if expiryDuration > 0 {
+				for _, datum := range c.data {
+					if beyondMaxCount <= 0 {
+						return
+					}
 
-				if time.Since(datum.setTime) >= expiryDuration {
-					c.cleanDelete(datum, preDeletionFuncExists, postDeletionFuncExists)
-					beyondMaxCount--
+					if time.Since(datum.setTime) >= expiryDuration {
+						c.cleanDelete(datum, preDeletionFuncExists, postDeletionFuncExists)
+						beyondMaxCount--
+					}
 				}
 			}
-		}
 
-		if !c.mutated {
-			return
-		}
+			if !c.mutated {
+				return
+			}
 
-		if beyondMaxCount > 0 && maxValues > 0 {
-			if beyondMaxCount == 1 {
-				var earliestDatum *cacheDatum
+			if beyondMaxCount > 0 && maxValues > 0 {
+				if beyondMaxCount == 1 {
+					var earliestDatum *cacheDatum
 
-				for _, datum := range c.data {
-					if earliestDatum == nil {
-						earliestDatum = datum
-					} else {
-						earliestSetTime := earliestDatum.setTime
-
-						if isZero := earliestSetTime.IsZero(); isZero || datum.setTime.Sub(earliestSetTime) > 0 {
+					for _, datum := range c.data {
+						if earliestDatum == nil {
 							earliestDatum = datum
+						} else {
+							earliestSetTime := earliestDatum.setTime
 
-							if isZero {
-								break
+							if isZero := earliestSetTime.IsZero(); isZero || datum.setTime.Sub(earliestSetTime) > 0 {
+								earliestDatum = datum
+
+								if isZero {
+									break
+								}
 							}
 						}
 					}
-				}
 
-				c.cleanDelete(earliestDatum, preDeletionFuncExists, postDeletionFuncExists)
-			} else {
-				dataLen := len(c.data)
-				dataMaxIndex := dataLen - 1
-				sortedData := make(cacheDataSlice, dataLen)
+					c.cleanDelete(earliestDatum, preDeletionFuncExists, postDeletionFuncExists)
+				} else {
+					dataLen := len(c.data)
+					dataMaxIndex := dataLen - 1
+					sortedData := make(cacheDataSlice, dataLen)
 
-				i := dataMaxIndex
-				for _, datum := range c.data {
-					sortedData[i] = datum
-					i--
-				}
+					i := dataMaxIndex
+					for _, datum := range c.data {
+						sortedData[i] = datum
+						i--
+					}
 
-				sort.Sort(sortedData)
+					sort.Sort(sortedData)
 
-				i = dataMaxIndex
-				for l := i - beyondMaxCount; i > l; i-- {
-					datum := sortedData[i]
-					c.cleanDelete(datum, preDeletionFuncExists, postDeletionFuncExists)
+					i = dataMaxIndex
+					for l := i - beyondMaxCount; i > l; i-- {
+						datum := sortedData[i]
+						c.cleanDelete(datum, preDeletionFuncExists, postDeletionFuncExists)
+					}
 				}
 			}
+
+			c.mutated = false
+		}()
+
+		if doAnotherSweep {
+			time.Sleep(cleanDurationGeneratedMin)
+		} else {
+			break
 		}
-
-		c.mutated = false
-	}()
-
-	if doAnotherSweep {
-		time.Sleep(cleanDurationGeneratedMin)
-		c.Clean()
 	}
 }
 
