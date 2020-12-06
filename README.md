@@ -44,6 +44,10 @@ func main() {
 	fmt.Println(p)  // prints pointer address
 	fmt.Println(*p) // prints 99
 
+	c.Iterate(func(key string, value interface{}, setTime time.Time) {
+		fmt.Printf("%s --> %v (%s)\n", key, value, setTime.Format(time.RFC822))
+	})
+
 	c.Unset(key) // runs UnsetPreFunc, unsets the entry and runs UnsetPostFunc
 
 	if found := c.Has(key); !found {
