@@ -24,8 +24,12 @@ type CallbackFunc func(string, interface{}, time.Time)
 type CallbackFilterFunc func(string, interface{}, time.Time) bool
 type CallbackMapFunc func(string, interface{}, time.Time) interface{}
 
-func NewInfiniteCache() *Cache {
-	return NewCache(0, 0)
+func NewInfiniteCache() (cache *Cache) {
+	cache = &Cache{}
+
+	go cache.watch()
+
+	return cache
 }
 
 func NewCache(expiryDuration time.Duration, maxValues int) *Cache {
@@ -41,8 +45,6 @@ func NewCacheWithOptions(options Options) *Cache {
 	cache := NewInfiniteCache()
 
 	cache.options = options
-
-	go cache.watch()
 
 	return cache
 }
