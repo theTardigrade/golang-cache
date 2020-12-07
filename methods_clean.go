@@ -45,7 +45,7 @@ func (c *Cache) clean() (cleanedFully bool) {
 	if expiryDuration > 0 {
 		for _, datum := range c.data {
 			if beyondMaxCount <= 0 {
-				break
+				return
 			}
 
 			if time.Since(datum.setTime) >= expiryDuration {
@@ -76,7 +76,6 @@ func (c *Cache) clean() (cleanedFully bool) {
 			}
 
 			c.unset(earliestDatum)
-			beyondMaxCount--
 		} else {
 			dataLen := len(c.data)
 			dataMaxIndex := dataLen - 1
@@ -94,12 +93,11 @@ func (c *Cache) clean() (cleanedFully bool) {
 			for l := i - beyondMaxCount; i > l; i-- {
 				datum := sortedData[i]
 				c.unset(datum)
-				beyondMaxCount--
 			}
 		}
 	}
 
-	if beyondMaxCount == 0 && !beyondMaxCountOverflow {
+	if !beyondMaxCountOverflow {
 		cleanedFully = true
 	}
 
