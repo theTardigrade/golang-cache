@@ -59,7 +59,7 @@ func (c *Cache) clean() (cleanedFully bool) {
 		beyondMaxCount -= handledCount
 	}
 
-	if maxValues > 0 && beyondMaxCount > 0 && c.hasMutatedSinceClean {
+	if maxValues > 0 && beyondMaxCount > 0 && c.hasStatus(statusHasMutatedSinceCleanedFully) {
 		if beyondMaxCount == 1 {
 			var earliestDatum *cacheDatum
 
@@ -103,7 +103,7 @@ func (c *Cache) clean() (cleanedFully bool) {
 
 	if !beyondMaxCountOverflow {
 		cleanedFully = true
-		c.hasMutatedSinceClean = false
+		c.unsetStatus(statusHasMutatedSinceCleanedFully)
 	}
 
 	return
@@ -193,9 +193,11 @@ func (c *Cache) watch() {
 
 // startWatchIfNecessary must only be called when mutex is already locked.
 func (c *Cache) startWatchIfNecessary() {
-	if !c.hasWatchStarted && (c.options.MaxValues > 0 || c.options.ExpiryDuration > 0) {
-		go c.watch()
+	if !c.hasStatus(statusHasWatchStarted) {
+		if c.options.MaxValues > 0 || c.options.ExpiryDuration > 0 {
+			go c.watch()
 
-		c.hasWatchStarted = true
+			c.setStatus(statusHasWatchStarted)
+		}
 	}
 }

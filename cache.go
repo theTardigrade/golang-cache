@@ -14,12 +14,11 @@ type cacheDatum struct {
 type cacheDataMap map[string]*cacheDatum
 
 type Cache struct {
-	data                 cacheDataMap
-	mutex                sync.RWMutex
-	options              Options
-	cleanIntervalChan    chan struct{}
-	hasMutatedSinceClean bool
-	hasWatchStarted      bool
+	data              cacheDataMap
+	mutex             sync.RWMutex
+	options           Options
+	cleanIntervalChan chan struct{}
+	status            status
 }
 
 type CallbackFunc func(key string, value interface{}, setTime time.Time)
