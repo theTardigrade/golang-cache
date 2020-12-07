@@ -1,6 +1,8 @@
 package cache
 
-import "strings"
+import (
+	"strings"
+)
 
 func (c *Cache) Get(key string) (value interface{}, found bool) {
 	defer c.mutex.RUnlock()
