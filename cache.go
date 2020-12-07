@@ -22,9 +22,9 @@ type Cache struct {
 	hasWatchStarted      bool
 }
 
-type CallbackFunc func(string, interface{}, time.Time)
-type CallbackFilterFunc func(string, interface{}, time.Time) bool
-type CallbackMapFunc func(string, interface{}, time.Time) interface{}
+type CallbackFunc func(key string, value interface{}, setTime time.Time)
+type CallbackFilterFunc func(key string, value interface{}, setTime time.Time) (retain bool)
+type CallbackMapFunc func(key string, value interface{}, setTime time.Time) (mappedValue interface{})
 
 func NewInfiniteCache() (cache *Cache) {
 	cache = &Cache{
