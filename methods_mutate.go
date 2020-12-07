@@ -2,26 +2,32 @@ package cache
 
 import "time"
 
-func (c *Cache) Set(key string, value interface{}) {
+func (c *Cache) Set(key string, value interface{}) (overwrite bool) {
 	defer c.mutex.Unlock()
 	c.mutex.Lock()
 
 	if datum, exists := c.data[key]; exists {
 		c.unset(datum)
+		overwrite = true
 	}
 
 	c.data[key] = newCacheDatum(key, value)
 	c.mutated = true
+
+	return
 }
 
-func (c *Cache) SetIfHasNot(key string, value interface{}) {
+func (c *Cache) SetIfHasNot(key string, value interface{}) (success bool) {
 	defer c.mutex.Unlock()
 	c.mutex.Lock()
 
 	if _, exists := c.data[key]; !exists {
 		c.data[key] = newCacheDatum(key, value)
 		c.mutated = true
+		success = true
 	}
+
+	return
 }
 
 // unset must only be called when mutex is already locked.
@@ -37,28 +43,36 @@ func (c *Cache) unset(datum *cacheDatum) {
 	}
 }
 
-func (c *Cache) Unset(key string) {
+func (c *Cache) Unset(key string) (success bool) {
 	defer c.mutex.Unlock()
 	c.mutex.Lock()
 
 	if datum, ok := c.data[key]; ok {
 		c.unset(datum)
 		c.mutated = true
+		success = true
 	}
+
+	return
 }
 
-func (c *Cache) Clear() {
+func (c *Cache) Clear() (overwrite bool) {
 	defer c.mutex.Unlock()
 	c.mutex.Lock()
 
-	for _, datum := range c.data {
-		c.unset(datum)
+	if len(c.data) > 0 {
+		for _, datum := range c.data {
+			c.unset(datum)
+		}
+
+		overwrite = true
+		c.mutated = true
 	}
 
-	c.mutated = true
+	return
 }
 
-func (c *Cache) Increment(key string, updateSetTime bool) (count int64) {
+func (c *Cache) Increment(key string, updateSetTime bool) (count int64, overwrite bool) {
 	defer c.mutex.Unlock()
 	c.mutex.Lock()
 
@@ -83,11 +97,12 @@ func (c *Cache) Increment(key string, updateSetTime bool) (count int64) {
 	}
 
 	c.mutated = true
+	overwrite = datumExists
 
 	return
 }
 
-func (c *Cache) Decrement(key string, updateSetTime bool) (count int64) {
+func (c *Cache) Decrement(key string, updateSetTime bool) (count int64, overwrite bool) {
 	defer c.mutex.Unlock()
 	c.mutex.Lock()
 
@@ -112,6 +127,7 @@ func (c *Cache) Decrement(key string, updateSetTime bool) (count int64) {
 	}
 
 	c.mutated = true
+	overwrite = datumExists
 
 	return
 }
