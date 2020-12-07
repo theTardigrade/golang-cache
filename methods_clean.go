@@ -180,7 +180,7 @@ func (c *Cache) watch() {
 		}()
 
 		if taskID == nil {
-			taskID = tasks.Set(cleanDuration, false, func(id *tasks.Identifier) {
+			taskID = tasks.Set(cleanDuration, true, func(id *tasks.Identifier) {
 				c.cleanFully()
 			})
 		} else {
