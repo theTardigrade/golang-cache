@@ -2,34 +2,34 @@ package cache
 
 import "strings"
 
-func (c *Cache) Get(key string) (interface{}, bool) {
+func (c *Cache) Get(key string) (value interface{}, found bool) {
 	defer c.mutex.RUnlock()
 	c.mutex.RLock()
 
-	datum, ok := c.data[key]
-	if !ok {
-		return nil, false
+	datum, found := c.data[key]
+	if found {
+		value = datum.value
 	}
 
-	return datum.value, true
+	return
 }
 
-func (c *Cache) MustGet(key string) interface{} {
-	value, ok := c.Get(key)
-	if !ok {
+func (c *Cache) MustGet(key string) (value interface{}) {
+	value, found := c.Get(key)
+	if !found {
 		panic(ErrNotFound)
 	}
 
-	return value
+	return
 }
 
-func (c *Cache) Has(key string) bool {
+func (c *Cache) Has(key string) (found bool) {
 	defer c.mutex.RUnlock()
 	c.mutex.RLock()
 
-	_, ok := c.data[key]
+	_, found = c.data[key]
 
-	return ok
+	return
 }
 
 func (c *Cache) Len() int {
