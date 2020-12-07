@@ -29,6 +29,11 @@ func (c *Cache) clean() (cleanedFully bool) {
 
 	expiryDuration := c.options.ExpiryDuration
 	maxValues := c.options.MaxValues
+
+	if maxValues < 0 {
+		maxValues = 0
+	}
+
 	beyondMaxCount := len(c.data) - maxValues
 
 	if beyondMaxCount > maxValuesPerSweep {
