@@ -10,7 +10,7 @@ func (c *Cache) IterateClear(callback CallbackFunc) (overwrite bool) {
 			c.unset(datum)
 		}
 
-		c.mutated = true
+		c.hasMutatedSinceClean = true
 		overwrite = true
 	}
 
@@ -28,8 +28,8 @@ func (c *Cache) Filter(callback CallbackFilterFunc) (overwrite bool) {
 		}
 	}
 
-	if !c.mutated {
-		c.mutated = overwrite
+	if !c.hasMutatedSinceClean {
+		c.hasMutatedSinceClean = overwrite
 	}
 
 	return
@@ -47,8 +47,8 @@ func (c *Cache) Map(callback CallbackMapFunc) (overwrite bool) {
 		}
 	}
 
-	if !c.mutated {
-		c.mutated = overwrite
+	if !c.hasMutatedSinceClean {
+		c.hasMutatedSinceClean = overwrite
 	}
 
 	return

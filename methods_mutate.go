@@ -12,7 +12,7 @@ func (c *Cache) Set(key string, value interface{}) (overwrite bool) {
 	}
 
 	c.data[key] = newCacheDatum(key, value)
-	c.mutated = true
+	c.hasMutatedSinceClean = true
 
 	return
 }
@@ -23,7 +23,7 @@ func (c *Cache) SetIfHasNot(key string, value interface{}) (success bool) {
 
 	if _, exists := c.data[key]; !exists {
 		c.data[key] = newCacheDatum(key, value)
-		c.mutated = true
+		c.hasMutatedSinceClean = true
 		success = true
 	}
 
@@ -49,7 +49,7 @@ func (c *Cache) Unset(key string) (success bool) {
 
 	if datum, ok := c.data[key]; ok {
 		c.unset(datum)
-		c.mutated = true
+		c.hasMutatedSinceClean = true
 		success = true
 	}
 
@@ -66,7 +66,7 @@ func (c *Cache) Clear() (overwrite bool) {
 		}
 
 		overwrite = true
-		c.mutated = true
+		c.hasMutatedSinceClean = true
 	}
 
 	return
@@ -96,7 +96,7 @@ func (c *Cache) Increment(key string, updateSetTime bool) (count int64, overwrit
 		c.data[key] = newCacheDatum(key, count)
 	}
 
-	c.mutated = true
+	c.hasMutatedSinceClean = true
 	overwrite = datumExists
 
 	return
@@ -126,7 +126,7 @@ func (c *Cache) Decrement(key string, updateSetTime bool) (count int64, overwrit
 		c.data[key] = newCacheDatum(key, count)
 	}
 
-	c.mutated = true
+	c.hasMutatedSinceClean = true
 	overwrite = datumExists
 
 	return

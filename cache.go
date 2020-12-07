@@ -14,11 +14,12 @@ type cacheDatum struct {
 type cacheDataMap map[string]*cacheDatum
 
 type Cache struct {
-	data              cacheDataMap
-	mutex             sync.RWMutex
-	mutated           bool
-	options           Options
-	cleanIntervalChan chan struct{}
+	data                 cacheDataMap
+	mutex                sync.RWMutex
+	options              Options
+	cleanIntervalChan    chan struct{}
+	hasMutatedSinceClean bool
+	hasWatchStarted      bool
 }
 
 type CallbackFunc func(string, interface{}, time.Time)
@@ -30,8 +31,6 @@ func NewInfiniteCache() (cache *Cache) {
 		data:              make(cacheDataMap),
 		cleanIntervalChan: make(chan struct{}),
 	}
-
-	go cache.watch()
 
 	return cache
 }
@@ -49,6 +48,8 @@ func NewCacheWithOptions(options Options) *Cache {
 	cache := NewInfiniteCache()
 
 	cache.options = options
+
+	cache.startWatchIfNecessary()
 
 	return cache
 }
