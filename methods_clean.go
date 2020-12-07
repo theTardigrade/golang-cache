@@ -21,7 +21,7 @@ const (
 func (c *Cache) clean() (cleanedFully bool) {
 	var maxValuesPerSweep int
 
-	if c.options.CleanMaxValuesPerSweep != 0 {
+	if c.options.CleanMaxValuesPerSweep > 0 {
 		maxValuesPerSweep = c.options.CleanMaxValuesPerSweep
 	} else {
 		maxValuesPerSweep = cleanDefaultMaxItemsPerSweep
@@ -31,10 +31,7 @@ func (c *Cache) clean() (cleanedFully bool) {
 	maxValues := c.options.MaxValues
 	beyondMaxCount := len(c.data) - maxValues
 
-	if maxValues <= 0 {
-		cleanedFully = true
-		beyondMaxCount = 0
-	} else if beyondMaxCount > maxValuesPerSweep {
+	if beyondMaxCount > maxValuesPerSweep {
 		beyondMaxCount = maxValuesPerSweep
 	} else {
 		cleanedFully = true
