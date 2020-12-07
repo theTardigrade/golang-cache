@@ -34,8 +34,6 @@ func (c *Cache) clean() (cleanedFully bool) {
 		maxValues = 0
 	}
 
-	var handledCount int
-
 	beyondMaxCount := len(c.data) - maxValues
 	var beyondMaxCountOverflow bool
 
@@ -45,6 +43,8 @@ func (c *Cache) clean() (cleanedFully bool) {
 	}
 
 	if expiryDuration > 0 {
+		var handledCount int
+
 		for _, datum := range c.data {
 			if handledCount >= maxValuesPerSweep {
 				return
@@ -52,10 +52,11 @@ func (c *Cache) clean() (cleanedFully bool) {
 
 			if time.Since(datum.setTime) >= expiryDuration {
 				c.unset(datum)
-				beyondMaxCount--
 				handledCount++
 			}
 		}
+
+		beyondMaxCount -= handledCount
 	}
 
 	if c.mutated && beyondMaxCount > 0 && maxValues > 0 {
@@ -79,7 +80,6 @@ func (c *Cache) clean() (cleanedFully bool) {
 			}
 
 			c.unset(earliestDatum)
-			handledCount++
 		} else {
 			dataLen := len(c.data)
 			dataMaxIndex := dataLen - 1
@@ -97,16 +97,14 @@ func (c *Cache) clean() (cleanedFully bool) {
 			for l := i - beyondMaxCount; i > l; i-- {
 				datum := sortedData[i]
 				c.unset(datum)
-				handledCount++
 			}
 		}
 	}
 
-	if !beyondMaxCountOverflow && handledCount < maxValuesPerSweep {
+	if !beyondMaxCountOverflow {
 		cleanedFully = true
+		c.mutated = false
 	}
-
-	c.mutated = false
 
 	return
 }
