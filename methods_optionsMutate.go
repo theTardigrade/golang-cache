@@ -24,6 +24,13 @@ func (c *Cache) SetCleanDuration(d time.Duration) {
 
 	c.mutated = true
 	c.options.CleanDuration = d
+
+	select {
+	case c.cleanIntervalChan <- struct{}{}:
+		break
+	default:
+		break
+	}
 }
 
 func (c *Cache) SetCleanMaxValuesPerSweep(n int) {

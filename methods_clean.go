@@ -3,6 +3,8 @@ package cache
 import (
 	"sort"
 	"time"
+
+	tasks "github.com/theTardigrade/golang-tasks"
 )
 
 type cacheDataSlice []*cacheDatum
@@ -147,14 +149,12 @@ const (
 	cleanDurationGeneratedMax = time.Minute
 )
 
-// runs in own goroutine
+// watch runs in own goroutine
 func (c *Cache) watch() {
-	var prevExecutionDuration time.Duration
-	startTime := time.Now()
+	var taskID *tasks.Identifier
+	var cleanDuration time.Duration
 
 	for {
-		var cleanDuration time.Duration
-
 		func() {
 			defer c.mutex.RUnlock()
 			c.mutex.RLock()
@@ -172,26 +172,14 @@ func (c *Cache) watch() {
 			}
 		}()
 
-		for {
-			sleepDuration := cleanDuration - prevExecutionDuration
-			prevExecutionDuration = time.Since(startTime)
-
-			if sleepDuration > 0 {
-				time.Sleep(sleepDuration)
-			}
-
-			startTime = time.Now()
-
-			c.cleanFully()
-
-			if func() bool {
-				defer c.mutex.RUnlock()
-				c.mutex.RLock()
-
-				return c.mutated
-			}() {
-				break
-			}
+		if taskID == nil {
+			taskID = tasks.Set(cleanDuration, false, func(id *tasks.Identifier) {
+				c.cleanFully()
+			})
+		} else {
+			taskID.ChangeInterval(cleanDuration)
 		}
+
+		<-c.cleanIntervalChan
 	}
 }
