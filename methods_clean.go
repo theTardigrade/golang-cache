@@ -35,15 +35,17 @@ func (c *Cache) clean() (cleanedFully bool) {
 	}
 
 	beyondMaxCount := len(c.data) - maxValues
+	var beyondMaxCountOverflow bool
 
 	if beyondMaxCount > maxValuesPerSweep {
 		beyondMaxCount = maxValuesPerSweep
+		beyondMaxCountOverflow = true
 	}
 
 	if expiryDuration > 0 {
 		for _, datum := range c.data {
 			if beyondMaxCount <= 0 {
-				return
+				break
 			}
 
 			if time.Since(datum.setTime) >= expiryDuration {
@@ -97,7 +99,7 @@ func (c *Cache) clean() (cleanedFully bool) {
 		}
 	}
 
-	if beyondMaxCount > 0 {
+	if beyondMaxCount == 0 && !beyondMaxCountOverflow {
 		cleanedFully = true
 	}
 
