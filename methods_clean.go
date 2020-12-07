@@ -137,16 +137,18 @@ func (c *Cache) cleanFully() {
 	}
 
 	// final full clean
-	func() {
-		defer c.mutex.Unlock()
-		c.mutex.Lock()
+	if !cleanedFully {
+		func() {
+			defer c.mutex.Unlock()
+			c.mutex.Lock()
 
-		for {
-			if cleanedFully = c.clean(); cleanedFully {
-				break
+			for {
+				if cleanedFully = c.clean(); cleanedFully {
+					break
+				}
 			}
-		}
-	}()
+		}()
+	}
 }
 
 const (
