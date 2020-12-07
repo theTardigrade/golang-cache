@@ -53,11 +53,7 @@ func (c *Cache) clean() (cleanedFully bool) {
 		}
 	}
 
-	if !c.mutated {
-		return
-	}
-
-	if beyondMaxCount > 0 && maxValues > 0 {
+	if c.mutated && beyondMaxCount > 0 && maxValues > 0 {
 		if beyondMaxCount == 1 {
 			var earliestDatum *cacheDatum
 
