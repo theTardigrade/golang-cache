@@ -37,7 +37,7 @@ func (c *Cache) clean() (cleanedFully bool) {
 	beyondMaxCount := len(c.data) - maxValues
 	var beyondMaxCountOverflow bool
 
-	if beyondMaxCount > maxValuesPerSweep && maxValues > 0 {
+	if maxValues > 0 && beyondMaxCount > maxValuesPerSweep {
 		beyondMaxCount = maxValuesPerSweep
 		beyondMaxCountOverflow = true
 	}
@@ -59,7 +59,7 @@ func (c *Cache) clean() (cleanedFully bool) {
 		beyondMaxCount -= handledCount
 	}
 
-	if c.mutated && beyondMaxCount > 0 && maxValues > 0 {
+	if maxValues > 0 && beyondMaxCount > 0 && c.mutated {
 		if beyondMaxCount == 1 {
 			var earliestDatum *cacheDatum
 

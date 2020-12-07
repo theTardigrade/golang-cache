@@ -10,12 +10,23 @@ func (c *Cache) SetMaxValues(n int) {
 	c.options.MaxValues = n
 }
 
+func (c *Cache) recalculateCleanInterval() {
+	select {
+	case c.cleanIntervalChan <- struct{}{}:
+		break
+	default:
+		break
+	}
+}
+
 func (c *Cache) SetExpiryDuration(d time.Duration) {
 	defer c.mutex.Unlock()
 	c.mutex.Lock()
 
 	c.mutated = true
 	c.options.ExpiryDuration = d
+
+	c.recalculateCleanInterval()
 }
 
 func (c *Cache) SetCleanDuration(d time.Duration) {
@@ -25,12 +36,7 @@ func (c *Cache) SetCleanDuration(d time.Duration) {
 	c.mutated = true
 	c.options.CleanDuration = d
 
-	select {
-	case c.cleanIntervalChan <- struct{}{}:
-		break
-	default:
-		break
-	}
+	c.recalculateCleanInterval()
 }
 
 func (c *Cache) SetCleanMaxValuesPerSweep(n int) {
