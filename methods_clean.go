@@ -151,7 +151,7 @@ func (c *Cache) cleanFully() {
 
 const (
 	cleanDurationGeneratedMin = time.Microsecond
-	cleanDurationGeneratedMax = time.Minute
+	cleanDurationGeneratedMax = time.Hour
 )
 
 // watch runs in own goroutine
@@ -193,6 +193,7 @@ func (c *Cache) watch() {
 func (c *Cache) startWatchIfNecessary() {
 	if !c.hasWatchStarted && (c.options.MaxValues > 0 || c.options.ExpiryDuration > 0) {
 		go c.watch()
+
 		c.hasWatchStarted = true
 	}
 }
