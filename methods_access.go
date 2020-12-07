@@ -53,7 +53,8 @@ func (c *Cache) String() string {
 			builder.WriteString(", ")
 		}
 
-		builder.WriteString(key)
+		escapedKey := strings.ReplaceAll(key, ",", "\\,")
+		builder.WriteString(escapedKey)
 	}
 
 	builder.WriteByte(']')
