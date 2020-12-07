@@ -48,7 +48,7 @@ func NewCacheWithOptions(options Options) *Cache {
 
 	cache.options = options
 
-	cache.startWatchIfNecessary()
+	cache.startCleanWatchIfNecessary()
 
 	return cache
 }

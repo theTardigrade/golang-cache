@@ -157,7 +157,7 @@ const (
 )
 
 // watch runs in own goroutine
-func (c *Cache) watch() {
+func (c *Cache) cleanWatch() {
 	var taskID *tasks.Identifier
 	var cleanDuration time.Duration
 
@@ -192,12 +192,12 @@ func (c *Cache) watch() {
 }
 
 // startWatchIfNecessary must only be called when mutex is already locked.
-func (c *Cache) startWatchIfNecessary() {
-	if !c.hasStatus(statusHasWatchStarted) {
+func (c *Cache) startCleanWatchIfNecessary() {
+	if !c.hasStatus(statusHasCleanWatchStarted) {
 		if c.options.MaxValues > 0 || c.options.ExpiryDuration > 0 {
-			go c.watch()
+			go c.cleanWatch()
 
-			c.setStatus(statusHasWatchStarted)
+			c.setStatus(statusHasCleanWatchStarted)
 		}
 	}
 }

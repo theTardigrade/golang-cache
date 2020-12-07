@@ -4,7 +4,7 @@ type status uint8
 
 const (
 	statusHasMutatedSinceCleanedFully = 1 << iota
-	statusHasWatchStarted
+	statusHasCleanWatchStarted
 )
 
 func (c *Cache) setStatus(s status) {

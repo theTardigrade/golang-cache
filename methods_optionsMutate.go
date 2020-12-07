@@ -9,7 +9,7 @@ func (c *Cache) SetMaxValues(n int) {
 	c.setStatus(statusHasMutatedSinceCleanedFully)
 	c.options.MaxValues = n
 
-	c.startWatchIfNecessary()
+	c.startCleanWatchIfNecessary()
 }
 
 func (c *Cache) recalculateCleanInterval() {
@@ -28,7 +28,7 @@ func (c *Cache) SetExpiryDuration(d time.Duration) {
 	c.setStatus(statusHasMutatedSinceCleanedFully)
 	c.options.ExpiryDuration = d
 
-	c.startWatchIfNecessary()
+	c.startCleanWatchIfNecessary()
 	c.recalculateCleanInterval()
 }
 
