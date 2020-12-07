@@ -15,11 +15,9 @@ const (
 	cleanDefaultMaxItemsPerSweep = 1 << 16
 )
 
-func (c *Cache) Clean() (cleanedFully bool) {
+// clean must only be called when mutex is already locked.
+func (c *Cache) clean() (cleanedFully bool) {
 	var maxValuesPerSweep int
-
-	defer c.mutex.Unlock()
-	c.mutex.Lock()
 
 	if c.options.CleanMaxValuesPerSweep != 0 {
 		maxValuesPerSweep = c.options.CleanMaxValuesPerSweep
@@ -102,13 +100,25 @@ func (c *Cache) Clean() (cleanedFully bool) {
 	return
 }
 
+func (c *Cache) Clean() (cleanedFully bool) {
+	defer c.mutex.Unlock()
+	c.mutex.Lock()
+
+	return c.clean()
+}
+
 func (c *Cache) cleanFully() {
 	for {
-		if cleanedFully := c.Clean(); cleanedFully {
+		cleanedFully := func() bool {
+			defer c.mutex.Unlock()
+			c.mutex.Lock()
+
+			return c.clean()
+		}()
+
+		if cleanedFully {
 			break
 		}
-
-		time.Sleep(cleanDurationGeneratedMin)
 	}
 }
 
