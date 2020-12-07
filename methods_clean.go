@@ -37,7 +37,7 @@ func (c *Cache) clean() (cleanedFully bool) {
 	beyondMaxCount := len(c.data) - maxValues
 	var beyondMaxCountOverflow bool
 
-	if beyondMaxCount > maxValuesPerSweep {
+	if beyondMaxCount > maxValuesPerSweep && maxValues > 0 {
 		beyondMaxCount = maxValuesPerSweep
 		beyondMaxCountOverflow = true
 	}
