@@ -27,10 +27,11 @@ func (c *Cache) clean() (cleanedFully bool) {
 
 	expiryDuration := c.options.ExpiryDuration
 	maxValues := c.options.MaxValues
-
 	beyondMaxCount := len(c.data) - maxValues
 
-	if beyondMaxCount > maxValuesPerSweep {
+	if maxValues <= 0 {
+		cleanedFully = true
+	} else if beyondMaxCount > maxValuesPerSweep {
 		beyondMaxCount = maxValuesPerSweep
 	} else {
 		cleanedFully = true
@@ -107,9 +108,15 @@ func (c *Cache) Clean() (cleanedFully bool) {
 	return c.clean()
 }
 
+const (
+	cleanFullyInitialMaxIterations = 1 << 10
+)
+
 func (c *Cache) cleanFully() {
-	for {
-		cleanedFully := func() bool {
+	var cleanedFully bool
+
+	for i := 0; i < cleanFullyInitialMaxIterations; i++ {
+		cleanedFully = func() bool {
 			defer c.mutex.Unlock()
 			c.mutex.Lock()
 
@@ -120,6 +127,18 @@ func (c *Cache) cleanFully() {
 			break
 		}
 	}
+
+	// final full clean
+	func() {
+		defer c.mutex.Unlock()
+		c.mutex.Lock()
+
+		for {
+			if cleanedFully = c.clean(); cleanedFully {
+				break
+			}
+		}
+	}()
 }
 
 const (
