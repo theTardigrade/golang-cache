@@ -10,13 +10,18 @@ func (c *Cache) Set(key string, value interface{}) (overwrite bool) {
 	c.mutex.Lock()
 
 	if datum, exists := c.data[key]; exists {
-		var match bool
+		var valuesMatch bool
 
-		if oldValue := datum.value; reflect.TypeOf(value).Kind() == reflect.TypeOf(oldValue).Kind() {
-			match = (value == oldValue)
+		oldValue := datum.value
+		valueType := reflect.TypeOf(value)
+		oldValueType := reflect.TypeOf(oldValue)
+
+		if valueType.Kind() == oldValueType.Kind() && valueType.Comparable() {
+			overwrite = true
+			valuesMatch = (value == oldValue)
 		}
 
-		if !match {
+		if !valuesMatch {
 			c.unset(datum)
 		}
 
