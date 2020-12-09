@@ -18,7 +18,6 @@ func (c *Cache) Set(key string, value interface{}) (overwrite bool) {
 			oldValueType := reflect.TypeOf(oldValue)
 
 			if valueType.Kind() == oldValueType.Kind() && valueType.Comparable() {
-				overwrite = true
 				valuesMatch = (value == oldValue)
 			}
 		}
