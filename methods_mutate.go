@@ -12,13 +12,15 @@ func (c *Cache) Set(key string, value interface{}) (overwrite bool) {
 	if datum, exists := c.data[key]; exists {
 		var valuesMatch bool
 
-		oldValue := datum.value
-		valueType := reflect.TypeOf(value)
-		oldValueType := reflect.TypeOf(oldValue)
+		{
+			oldValue := datum.value
+			valueType := reflect.TypeOf(value)
+			oldValueType := reflect.TypeOf(oldValue)
 
-		if valueType.Kind() == oldValueType.Kind() && valueType.Comparable() {
-			overwrite = true
-			valuesMatch = (value == oldValue)
+			if valueType.Kind() == oldValueType.Kind() && valueType.Comparable() {
+				overwrite = true
+				valuesMatch = (value == oldValue)
+			}
 		}
 
 		if !valuesMatch {
