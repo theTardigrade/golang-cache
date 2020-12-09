@@ -162,32 +162,52 @@ func (c *Cache) cleanWatch() {
 	var cleanDuration time.Duration
 
 	for {
-		func() {
-			defer c.mutex.RUnlock()
-			c.mutex.RLock()
+		doneChan := make(chan struct{})
 
-			cleanDuration = c.options.CleanDuration
+		go func(doneChan chan<- struct{}) {
+			func() {
+				defer c.mutex.RUnlock()
+				c.mutex.RLock()
 
-			if cleanDuration <= 0 {
-				cleanDuration = c.options.ExpiryDuration / 10
+				cleanDuration = c.options.CleanDuration
 
-				if cleanDuration < cleanDurationGeneratedMin {
-					cleanDuration = cleanDurationGeneratedMin
-				} else if cleanDuration > cleanDurationGeneratedMax {
-					cleanDuration = cleanDurationGeneratedMax
+				if cleanDuration <= 0 {
+					cleanDuration = c.options.ExpiryDuration / 10
+
+					if cleanDuration < cleanDurationGeneratedMin {
+						cleanDuration = cleanDurationGeneratedMin
+					} else if cleanDuration > cleanDurationGeneratedMax {
+						cleanDuration = cleanDurationGeneratedMax
+					}
 				}
+			}()
+
+			if taskID == nil {
+				taskID = tasks.Set(cleanDuration, true, func(id *tasks.Identifier) {
+					c.cleanFully()
+				})
+			} else {
+				taskID.ChangeInterval(cleanDuration)
 			}
-		}()
 
-		if taskID == nil {
-			taskID = tasks.Set(cleanDuration, true, func(id *tasks.Identifier) {
-				c.cleanFully()
-			})
-		} else {
-			taskID.ChangeInterval(cleanDuration)
-		}
+			doneChan <- struct{}{}
+		}(doneChan)
 
-		<-c.cleanIntervalChan
+		func(doneChan <-chan struct{}, cleanIntervalChan <-chan struct{}) {
+			var d bool
+
+			select {
+			case <-doneChan:
+				d = true
+			case <-cleanIntervalChan:
+			}
+
+			if d {
+				<-cleanIntervalChan
+			} else {
+				<-doneChan
+			}
+		}(doneChan, c.cleanIntervalChan)
 	}
 }
 
