@@ -1,13 +1,25 @@
 package cache
 
-import "time"
+import (
+	"reflect"
+	"time"
+)
 
 func (c *Cache) Set(key string, value interface{}) (overwrite bool) {
 	defer c.mutex.Unlock()
 	c.mutex.Lock()
 
 	if datum, exists := c.data[key]; exists {
-		c.unset(datum)
+		var match bool
+
+		if oldValue := datum.value; reflect.TypeOf(value).Kind() == reflect.TypeOf(oldValue).Kind() {
+			match = (value == oldValue)
+		}
+
+		if !match {
+			c.unset(datum)
+		}
+
 		overwrite = true
 	}
 
