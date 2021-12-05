@@ -2,10 +2,6 @@
 
 This package allows arbitrary values to be stored and accessed using string keys.
 
-## Support
-
-If you use or find value in this package, please consider donating at PayPal: [https://www.paypal.me/jismithpp](https://www.paypal.me/jismithpp)
-
 ## Example
 
 ```golang
